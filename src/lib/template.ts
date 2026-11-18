@@ -42,7 +42,7 @@ export const DEFAULT_GUIDES: Record<StepKey, Guide> = {
   view: { all: '카드를 보고 🔊를 눌러 들어요' },
   shoot: { all: '카드에 맞는 사진이나 영상을 찍어요' },
   connect: {
-    all: '사진을 끌어서 카드에 놓아요. 사진을 누르고 카드를 눌러도 돼요',
+    all: '카드를 누르고 사진을 골라요',
     하: '찍은 사진이 카드에 벌써 들어갔어요. 카드를 누르면 꾸밀 수 있어요',
   },
   greet: { all: '영상이나 목소리로 인사해요' },

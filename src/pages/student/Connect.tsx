@@ -3,7 +3,6 @@ import FaceCrop from '../../components/FaceCrop'
 import Guide from '../../components/Guide'
 import ScenePreview from '../../components/ScenePreview'
 import VoiceButton from '../../components/VoiceButton'
-import { startDrag, wasDragged } from '../../lib/drag'
 import { speak } from '../../lib/speak'
 import { EFFECTS, Effect, SceneEdit, Sticker, emptyScene } from '../../lib/store'
 import { FlatCard, freeTextOn } from '../../lib/template'
@@ -14,85 +13,109 @@ import { useTeacherPhotos } from './useTeacherPhotos'
 
 const EMOJIS = ['⭐', '❤️', '🌈', '😊', '👍', '🐰', '🐻', '🚌', '🍚', '🌸', '🎈', '🦋']
 
-/** ③ 연결하기: 위에 사진함 한 줄, 아래에 카드들. 카드를 누르면 꾸미기 */
+/** ③ 카드 고르기 → (사진이 없으면) 사진 고르는 창 → 꾸미기 */
 export default function Connect() {
   const c = useStudent()
   const { cards, ns, project, update, go } = c
-  const loadingTeacher = useTeacherPhotos(c)
-  const mine = project.media.filter((m) => !m.teacher)
-  const teachers = project.media.filter((m) => m.teacher)
-  const [picked, setPicked] = useState<string | null>(null)
+  useTeacherPhotos(c)
   const [open, setOpen] = useState<string | null>(null)
+  const [picking, setPicking] = useState<string | null>(null)
 
-  const link = (cardId: string, mediaId: string) => {
+  const link = (cardId: string, mediaId: string | null) => {
     update((p) => ({ ...p, scenes: { ...p.scenes, [cardId]: { ...(p.scenes[cardId] ?? emptyScene()), mediaId } } }))
-    setPicked(null)
-    speak('연결했어요')
+  }
+  const tapCard = (cardId: string) => {
+    const has = project.scenes[cardId]?.mediaId
+    if (has) setOpen(cardId)
+    else setPicking(cardId)
   }
 
-  const openCard = cards.find((c) => c.id === open)
-  if (openCard) return <Decorate card={openCard} onClose={() => setOpen(null)} />
+  const openCard = cards.find((x) => x.id === open)
+  const pickCard = cards.find((x) => x.id === picking)
 
   return (
-    <div className="connect">
-      <Guide step="connect" />
-
-      <div className="photostrip">
-        <span className="strip-label">📸 내 사진</span>
-        {mine.length === 0 && <span className="muted">아직 찍은 것이 없어요</span>}
-        {mine.map((m) => (
-          <div
-            key={m.id}
-            className="pb-item"
-            onPointerDown={(e) => startDrag(e, (cardId) => link(cardId, m.id))}
-            onClick={(e) => { if (!wasDragged(e.currentTarget)) setPicked(picked === m.id ? null : m.id) }}
-          >
-            <Thumb ns={ns} m={m} selected={picked === m.id} />
+    <>
+      {openCard ? (
+        <Decorate card={openCard} onClose={() => setOpen(null)} onChangePhoto={() => setPicking(openCard.id)} />
+      ) : (
+        <div className="connect">
+          <Guide step="connect" />
+          <div className="slot-grid">
+            {cards.map((card) => {
+              const sc = project.scenes[card.id]
+              const m = project.media.find((x) => x.id === sc?.mediaId)
+              return (
+                <button key={card.id} className={`slot ${m ? 'filled' : ''}`} onClick={() => tapCard(card.id)}>
+                  <div className="slot-media">{m ? <Thumb ns={ns} m={m} /> : <span className="slot-add">＋ 사진 고르기</span>}</div>
+                  <span className="slot-text">{card.text}</span>
+                  <span className="slot-marks">
+                    {sc?.voiceId ? '🎤' : ''}{sc?.text || sc?.words.length ? '💬' : ''}{sc?.stickers.length ? '⭐' : ''}
+                    <b>{m ? ' 꾸미기 ▶' : ''}</b>
+                  </span>
+                </button>
+              )
+            })}
           </div>
-        ))}
-        {(teachers.length > 0 || loadingTeacher) && (
-          <>
-            <span className="strip-sep" />
-            <span className="strip-label">🧑‍🏫 선생님 사진</span>
-            {loadingTeacher && teachers.length === 0 && <span className="muted">불러오는 중이에요…</span>}
-            {teachers.map((m) => (
-              <div
-                key={m.id}
-                className="pb-item from-teacher"
-                onPointerDown={(e) => startDrag(e, (cardId) => link(cardId, m.id))}
-                onClick={(e) => { if (!wasDragged(e.currentTarget)) setPicked(picked === m.id ? null : m.id) }}
-              >
-                <Thumb ns={ns} m={m} selected={picked === m.id} />
-              </div>
-            ))}
-          </>
+          <div className="row end">
+            <button className="btn big primary" onClick={() => go('greet')}>다 했어요 ▶</button>
+          </div>
+        </div>
+      )}
+      {pickCard && (
+        <PhotoPicker
+          card={pickCard}
+          current={project.scenes[pickCard.id]?.mediaId ?? null}
+          onPick={(mediaId) => {
+            link(pickCard.id, mediaId)
+            setPicking(null)
+            setOpen(pickCard.id)
+            if (mediaId) speak('사진을 넣었어요')
+          }}
+          onClose={() => setPicking(null)}
+        />
+      )}
+    </>
+  )
+}
+
+/** 폰 사진 고르기처럼: 내가 찍은 사진 / 선생님 사진 */
+function PhotoPicker({ card, current, onPick, onClose }: {
+  card: FlatCard; current: string | null; onPick: (mediaId: string | null) => void; onClose: () => void
+}) {
+  const { ns, project, go } = useStudent()
+  const mine = [...project.media.filter((m) => !m.teacher)].sort((a, b) => Number(b.cardId === card.id) - Number(a.cardId === card.id))
+  const teacher = project.media.filter((m) => m.teacher).sort((a, b) => Number(b.cardId === card.id) - Number(a.cardId === card.id))
+  const [tab, setTab] = useState<'mine' | 'teacher'>(mine.length || !teacher.length ? 'mine' : 'teacher')
+  const list = tab === 'mine' ? mine : teacher
+
+  return (
+    <div className="modal sheet" onClick={onClose}>
+      <div className="modal-body picker" onClick={(e) => e.stopPropagation()}>
+        <div className="picker-head">
+          <button className="btn" onClick={onClose}>✕ 닫기</button>
+          <p className="picker-q">{card.text}</p>
+          {current ? <button className="btn" onClick={() => onPick(null)}>사진 빼기</button> : <span className="picker-pad" />}
+        </div>
+        {teacher.length > 0 && (
+          <div className="tool-tabs picker-tabs">
+            <button className={`tool-tab ${tab === 'mine' ? 'on' : ''}`} onClick={() => setTab('mine')}>📸 내가 찍은 사진 ({mine.length})</button>
+            <button className={`tool-tab ${tab === 'teacher' ? 'on' : ''}`} onClick={() => setTab('teacher')}>🧑‍🏫 선생님 사진 ({teacher.length})</button>
+          </div>
         )}
-      </div>
-
-      <div className="slot-grid">
-        {cards.map((c) => {
-          const s = project.scenes[c.id]
-          const m = project.media.find((x) => x.id === s?.mediaId)
-          return (
-            <button
-              key={c.id}
-              data-drop={c.id}
-              className={`slot ${m ? 'filled' : ''} ${picked ? 'ready' : ''}`}
-              onClick={() => (picked ? link(c.id, picked) : setOpen(c.id))}
-            >
-              <div className="slot-media">{m ? <Thumb ns={ns} m={m} /> : <span>{picked ? '여기에 넣어요' : '사진을 놓아요'}</span>}</div>
-              <span className="slot-text">{c.text}</span>
-              <span className="slot-marks">
-                {s?.voiceId ? '🎤' : ''}{s?.text || s?.words.length ? '💬' : ''}{s?.stickers.length ? '⭐' : ''}
-                {!picked && <b> 꾸미기 ▶</b>}
-              </span>
+        <div className="picker-grid">
+          {list.map((m) => (
+            <button key={m.id} className={`picker-item ${m.id === current ? 'on' : ''}`} onClick={() => onPick(m.id)}>
+              <Thumb ns={ns} m={m} selected={m.id === current} />
+              {m.cardId === card.id && !m.teacher && <span className="picker-badge">이 카드</span>}
             </button>
-          )
-        })}
-      </div>
-
-      <div className="row end">
-        <button className="btn big primary" onClick={() => go('greet')}>다 했어요 ▶</button>
+          ))}
+          {list.length === 0 && (
+            <div className="picker-empty">
+              <p className="hint">{tab === 'mine' ? '아직 찍은 사진이 없어요' : '선생님 사진이 없어요'}</p>
+              {tab === 'mine' && <button className="btn big primary" onClick={() => go('shoot')}>📷 찍으러 가요</button>}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -101,7 +124,7 @@ export default function Connect() {
 type Tool = 'voice' | 'text' | 'sticker'
 
 /** 꾸미기: 큰 미리보기 하나 + 도구는 하나씩만 펼침 */
-function Decorate({ card, onClose }: { card: FlatCard; onClose: () => void }) {
+function Decorate({ card, onClose, onChangePhoto }: { card: FlatCard; onClose: () => void; onChangePhoto: () => void }) {
   const { me, ns, project, update, template } = useStudent()
   const edit = project.scenes[card.id] ?? emptyScene()
   const media = project.media.find((m) => m.id === edit.mediaId)
@@ -142,6 +165,7 @@ function Decorate({ card, onClose }: { card: FlatCard; onClose: () => void }) {
       <div className="deco-head">
         <button className="btn" onClick={onClose}>◀ 카드들</button>
         <p className="deco-q">{card.text}</p>
+        <button className="btn" onClick={onChangePhoto}>🖼 사진 바꾸기</button>
         <button className="btn big primary" onClick={onClose}>✅ 다 했어요</button>
       </div>
 
