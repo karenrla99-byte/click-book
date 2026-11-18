@@ -13,7 +13,7 @@ import { Thumb } from './Shoot'
 
 const EMOJIS = ['⭐', '❤️', '🌈', '😊', '👍', '🐰', '🐻', '🚌', '🍚', '🌸', '🎈', '🦋']
 
-/** ③ 연결하기 + 꾸미기 (수준별) */
+/** ③ 연결하기: 위에 사진함 한 줄, 아래에 카드들. 카드를 누르면 꾸미기 */
 export default function Connect() {
   const { cards, ns, project, update, go } = useStudent()
   const [picked, setPicked] = useState<string | null>(null)
@@ -31,48 +31,44 @@ export default function Connect() {
   return (
     <div className="connect">
       <Guide step="connect" />
-      <div className="connect-grid">
-        <div className="slots">
-          {cards.map((c) => {
-            const s = project.scenes[c.id]
-            const m = project.media.find((x) => x.id === s?.mediaId)
-            return (
-              <div
-                key={c.id}
-                data-drop={c.id}
-                className={`slot ${m ? 'filled' : ''} ${picked ? 'ready' : ''}`}
-                onClick={() => (picked ? link(c.id, picked) : setOpen(c.id))}
-              >
-                <div className="slot-media">{m ? <Thumb ns={ns} m={m} small /> : <span>여기에 놓아요</span>}</div>
-                <div className="slot-text">
-                  <span className="muted">{c.chapterTitle}</span>
-                  <span>{c.text}</span>
-                  <span className="slot-marks">
-                    {s?.voiceId && '🎤'} {(s?.words.length || s?.text) && '💬'} {s?.stickers.length ? '⭐' : ''}
-                  </span>
-                </div>
-                <span className="slot-go">꾸미기 ▶</span>
-              </div>
-            )
-          })}
-        </div>
-        <div className="photobox">
-          <h3>📸 내 사진함</h3>
-          {project.media.length === 0 && <p className="muted">아직 찍은 것이 없어요. ② 찍기에서 찍어요.</p>}
-          <div className="photobox-grid">
-            {project.media.map((m) => (
-              <div
-                key={m.id}
-                className="pb-item"
-                onPointerDown={(e) => startDrag(e, (cardId) => link(cardId, m.id))}
-                onClick={(e) => { if (!wasDragged(e.currentTarget)) setPicked(picked === m.id ? null : m.id) }}
-              >
-                <Thumb ns={ns} m={m} selected={picked === m.id} />
-              </div>
-            ))}
+
+      <div className="photostrip">
+        <span className="strip-label">📸 내 사진</span>
+        {project.media.length === 0 && <span className="muted">아직 찍은 것이 없어요. ② 찍기에서 찍어요.</span>}
+        {project.media.map((m) => (
+          <div
+            key={m.id}
+            className="pb-item"
+            onPointerDown={(e) => startDrag(e, (cardId) => link(cardId, m.id))}
+            onClick={(e) => { if (!wasDragged(e.currentTarget)) setPicked(picked === m.id ? null : m.id) }}
+          >
+            <Thumb ns={ns} m={m} selected={picked === m.id} />
           </div>
-        </div>
+        ))}
       </div>
+
+      <div className="slot-grid">
+        {cards.map((c) => {
+          const s = project.scenes[c.id]
+          const m = project.media.find((x) => x.id === s?.mediaId)
+          return (
+            <button
+              key={c.id}
+              data-drop={c.id}
+              className={`slot ${m ? 'filled' : ''} ${picked ? 'ready' : ''}`}
+              onClick={() => (picked ? link(c.id, picked) : setOpen(c.id))}
+            >
+              <div className="slot-media">{m ? <Thumb ns={ns} m={m} /> : <span>{picked ? '여기에 넣어요' : '사진을 놓아요'}</span>}</div>
+              <span className="slot-text">{c.text}</span>
+              <span className="slot-marks">
+                {s?.voiceId ? '🎤' : ''}{s?.text || s?.words.length ? '💬' : ''}{s?.stickers.length ? '⭐' : ''}
+                {!picked && <b> 꾸미기 ▶</b>}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
       <div className="row end">
         <button className="btn big primary" onClick={() => go('greet')}>다 했어요 ▶</button>
       </div>
@@ -80,17 +76,26 @@ export default function Connect() {
   )
 }
 
+type Tool = 'voice' | 'text' | 'sticker'
+
+/** 꾸미기: 큰 미리보기 하나 + 도구는 하나씩만 펼침 */
 function Decorate({ card, onClose }: { card: FlatCard; onClose: () => void }) {
   const { me, ns, project, update, template } = useStudent()
   const edit = project.scenes[card.id] ?? emptyScene()
   const media = project.media.find((m) => m.id === edit.mediaId)
+  const level = me.level
+  const canWrite = freeTextOn(template.data, level)
+  const showWords = level !== '하' && card.words.length > 0
+  const tools: { id: Tool; label: string }[] = [
+    { id: 'voice', label: '🎤 말하기' },
+    ...(canWrite || showWords ? [{ id: 'text' as Tool, label: '💬 자막' }] : []),
+    ...(level !== '하' ? [{ id: 'sticker' as Tool, label: '⭐ 꾸미기' }] : []),
+  ]
+  const [tool, setTool] = useState<Tool | null>(level === '중' && tools.some((t) => t.id === 'text') ? 'text' : 'voice')
   const [sel, setSel] = useState<string | null>(null)
   const [faceFrom, setFaceFrom] = useState<string | null>(null)
   const [choosingFace, setChoosingFace] = useState(false)
   const photos = project.media.filter((m) => m.kind === 'photo')
-  const level = me.level
-  const canWrite = freeTextOn(template.data, level)
-  const [openWrite, setOpenWrite] = useState(level !== '하' || !!edit.text)
 
   const set = (patch: Partial<SceneEdit>) =>
     update((p) => ({ ...p, scenes: { ...p.scenes, [card.id]: { ...(p.scenes[card.id] ?? emptyScene()), ...patch } } }))
@@ -107,83 +112,89 @@ function Decorate({ card, onClose }: { card: FlatCard; onClose: () => void }) {
     if (!canWrite) return toggleWord(w)
     const t = (edit.text ?? '').trim()
     set({ text: (t ? `${t} ${w}` : w).slice(0, 40) })
-    setOpenWrite(true)
   }
   const wordOn = (w: string) => (canWrite ? (edit.text ?? '').includes(w) : edit.words.includes(w))
 
   return (
     <div className="decorate">
-      <div className="decorate-left">
+      <div className="deco-head">
+        <button className="btn" onClick={onClose}>◀ 카드들</button>
+        <p className="deco-q">{card.text}</p>
+        <button className="btn big primary" onClick={onClose}>✅ 다 했어요</button>
+      </div>
+
+      <div className="deco-stage">
         <ScenePreview ns={ns} card={card} edit={edit} media={media} selected={sel} onSelect={setSel}
           onMove={(id, x, y) => setSticker(id, { x, y })} />
-        {selected && (
-          <div className="tool-row">
+      </div>
+
+      {selected ? (
+        <div className="deco-panel">
+          <div className="row center">
             {EFFECTS.map((ef) => (
               <button key={ef.id} className={`btn ${selected.effect === ef.id ? 'primary' : ''}`} onClick={() => setSticker(selected.id, { effect: ef.id as Effect })}>{ef.label}</button>
             ))}
+          </div>
+          <div className="row center">
             <button className="btn icon" onClick={() => setSticker(selected.id, { size: Math.max(0.1, selected.size - 0.05) })} aria-label="작게">➖</button>
             <button className="btn icon" onClick={() => setSticker(selected.id, { size: Math.min(0.7, selected.size + 0.05) })} aria-label="크게">➕</button>
             <button className="btn icon" onClick={() => { set({ stickers: edit.stickers.filter((s) => s.id !== selected.id) }); setSel(null) }} aria-label="스티커 지우기">🗑</button>
+            <button className="btn primary" onClick={() => setSel(null)}>좋아요</button>
           </div>
-        )}
-      </div>
-
-      <div className="decorate-right">
-        <div className="row-between">
-          <h3>{card.text}</h3>
         </div>
-
-        <section>
-          <h4>{level === '상' ? '🎤 내 말로 답해요' : '🎤 한 마디 해요 (해도 되고 안 해도 돼요)'}</h4>
-          <VoiceButton ns={ns} blobId={edit.voiceId} onChange={(id, d) => set({ voiceId: id, voiceDuration: d })} />
-        </section>
-
-        {level !== '하' && card.words.length > 0 && (
-          <section>
-            <h4>💬 단어 카드를 골라요{canWrite ? ' (누르면 자막에 들어가요)' : ''}</h4>
-            <div className="row">
-              {card.words.map((w) => (
-                <button key={w} className={`btn word ${wordOn(w) ? 'primary' : ''}`} onClick={() => { pickWord(w); speak(w) }}>{w}</button>
+      ) : (
+        <>
+          {tools.length > 1 && (
+            <div className="tool-tabs">
+              {tools.map((t) => (
+                <button key={t.id} className={`tool-tab ${tool === t.id ? 'on' : ''}`} onClick={() => setTool(tool === t.id ? null : t.id)}>{t.label}</button>
               ))}
             </div>
-          </section>
-        )}
+          )}
 
-        {canWrite && (openWrite ? (
-          <section>
-            <h4>✏️ 자막을 써요</h4>
-            <div className="row">
-              <input className="grow" value={edit.text ?? ''} maxLength={40} placeholder="영상 아래에 자막으로 나와요" onChange={(e) => set({ text: e.target.value })} />
-              {!!edit.text && <button className="btn icon" onClick={() => set({ text: '' })} aria-label="자막 지우기">⌫</button>}
+          {tool === 'voice' && (
+            <div className="deco-panel">
+              <p className="hint">{level === '상' ? '내 말로 답해요' : '한 마디 해요 (안 해도 돼요)'}</p>
+              <VoiceButton ns={ns} blobId={edit.voiceId} onChange={(id, d) => set({ voiceId: id, voiceDuration: d })} />
             </div>
-          </section>
-        ) : (
-          <button className="btn" onClick={() => setOpenWrite(true)}>✏️ 자막 쓰기</button>
-        ))}
+          )}
 
-        {level !== '하' && (
-          <section>
-            <h4>⭐ 붙이기 (누르고 화면에서 끌어서 옮겨요)</h4>
-            <div className="row">
-              {EMOJIS.map((em) => <button key={em} className="btn icon emoji" onClick={() => addSticker({ kind: 'emoji', emoji: em })}>{em}</button>)}
-              <button className="btn" onClick={() => setChoosingFace(true)} disabled={!photos.length}>😀 얼굴 쏙</button>
+          {tool === 'text' && (
+            <div className="deco-panel">
+              {showWords && (
+                <div className="row center">
+                  {card.words.map((w) => (
+                    <button key={w} className={`btn word ${wordOn(w) ? 'primary' : ''}`} onClick={() => { pickWord(w); speak(w) }}>{w}</button>
+                  ))}
+                </div>
+              )}
+              {canWrite && (
+                <div className="row center">
+                  <input className="deco-input" value={edit.text ?? ''} maxLength={40} placeholder="자막을 써요" onChange={(e) => set({ text: e.target.value })} />
+                  {!!edit.text && <button className="btn icon" onClick={() => set({ text: '' })} aria-label="자막 지우기">⌫</button>}
+                </div>
+              )}
             </div>
-          </section>
-        )}
+          )}
 
-        {media?.kind === 'photo' && (
-          <section className="row">
-            <button className={`btn ${edit.kenBurns ? 'primary' : ''}`} onClick={() => set({ kenBurns: !edit.kenBurns })}>
-              🔍 천천히 확대 {edit.kenBurns ? '켜짐' : '꺼짐'}
-            </button>
-          </section>
-        )}
-
-        <div className="row end">
-          {media && <button className="btn" onClick={() => set({ mediaId: null })}>사진 빼기</button>}
-          <button className="btn big primary" onClick={onClose}>✅ 다 했어요</button>
-        </div>
-      </div>
+          {tool === 'sticker' && (
+            <div className="deco-panel">
+              <div className="row center">
+                {EMOJIS.map((em) => <button key={em} className="btn icon emoji" onClick={() => addSticker({ kind: 'emoji', emoji: em })}>{em}</button>)}
+              </div>
+              <div className="row center">
+                {photos.length > 0 && <button className="btn" onClick={() => setChoosingFace(true)}>😀 얼굴 쏙</button>}
+                {media?.kind === 'photo' && (
+                  <button className={`btn ${edit.kenBurns ? 'primary' : ''}`} onClick={() => set({ kenBurns: !edit.kenBurns })}>
+                    🔍 천천히 확대 {edit.kenBurns ? '켜짐' : '꺼짐'}
+                  </button>
+                )}
+              </div>
+              <p className="muted center-text">붙인 것을 누르면 움직임을 고르고, 끌어서 옮겨요</p>
+            </div>
+          )}
+        </>
+      )}
 
       {choosingFace && (
         <div className="modal" onClick={() => setChoosingFace(false)}>

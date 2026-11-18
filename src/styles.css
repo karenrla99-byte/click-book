@@ -388,3 +388,27 @@ textarea { width: 100%; }
 .guide-levels { display: grid; grid-template-columns: 50px 1fr; gap: 8px; align-items: center; margin-top: 8px; }
 @media (max-width: 900px) { .scene-row { grid-template-columns: 1fr; } .guide-row { grid-template-columns: 1fr; } }
 input::placeholder, textarea::placeholder { color: #c4b8a6; }
+
+/* ── ③ 단순화: 한 줄 배치 ── */
+.photostrip { display: flex; gap: 16px; align-items: center; overflow-x: auto; padding: 18px 12px 12px; background: rgba(255,255,255,.7); border: 2px solid #e3d9c8; border-radius: 18px; min-height: 120px; }
+.photostrip .pb-item { flex: 0 0 150px; }
+.strip-label { font-family: var(--display); font-size: 24px; white-space: nowrap; color: var(--ink); }
+.slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+.slot-grid .slot { flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; min-height: 0; font: inherit; color: inherit; text-align: left; }
+.slot-grid .slot-media { width: 100%; aspect-ratio: 16 / 10; padding: 0; border-radius: 10px; background: rgba(244, 226, 180, .25); display: grid; place-items: center; font-size: 18px; }
+.slot-grid .slot.filled .slot-media { background: none; }
+.slot-grid .slot-media .thumb { width: 92%; }
+.slot-grid .slot-text { font-size: 21px; line-height: 1.35; }
+.slot-grid .slot-marks { display: flex; justify-content: space-between; font-size: 20px; color: var(--ink-soft); }
+.decorate { display: flex; flex-direction: column; gap: 14px; align-items: center; }
+.deco-head { display: flex; gap: 14px; align-items: center; width: 100%; }
+.deco-q { flex: 1; margin: 0; text-align: center; font-family: var(--display); font-size: 30px; }
+.deco-stage { width: min(100%, calc((100vh - 400px) * 16 / 9), 900px); min-width: 360px; }
+.deco-panel { display: flex; flex-direction: column; gap: 12px; align-items: center; width: 100%; max-width: 900px; padding: 14px; background: rgba(255,255,255,.75); border: 2px solid #e3d9c8; border-radius: 18px; }
+.deco-panel .hint { margin: 0; }
+.deco-input { width: min(600px, 100%); font-size: 26px; text-align: center; }
+.tool-tabs { display: flex; gap: 0; border: 2px solid #d8cdbb; border-radius: 999px; overflow: hidden; background: var(--paper-2); box-shadow: 0 3px 0 #ebe3d4; }
+.tool-tab { min-height: 64px; min-width: 150px; padding: 0 24px; font: inherit; font-size: 24px; font-weight: 700; color: var(--ink-soft); background: transparent; border: none; border-left: 1.5px dashed #e3d9c8; cursor: pointer; }
+.tool-tab:first-child { border-left: none; }
+.tool-tab.on { background: var(--mint); color: var(--ink); }
+.center-text { text-align: center; }
