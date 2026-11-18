@@ -3,12 +3,15 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import Keypad from '../components/Keypad'
 import NeedSupabase from '../components/NeedSupabase'
 import QrCode, { joinUrl } from '../components/QrCode'
+import Inbox from '../components/Inbox'
 import RosterEditor from '../components/RosterEditor'
+import TemplateEditor from '../components/TemplateEditor'
+import { fn } from '../lib/api'
 import { friendly, rpc, supabaseReady } from '../lib/supabase'
 import { getKey, removeKey, setKey } from '../lib/teacherKeys'
 import { Student, TeacherRoom as Room } from '../lib/types'
 
-type Tab = 'room' | 'roster'
+type Tab = 'room' | 'roster' | 'template' | 'inbox'
 
 export default function TeacherRoom() {
   const { id = '' } = useParams()
@@ -17,7 +20,7 @@ export default function TeacherRoom() {
   const key = getKey(id)
   const [room, setRoom] = useState<Room | null>(null)
   const [err, setErr] = useState('')
-  const [tab, setTab] = useState<Tab>('room')
+  const [tab, setTab] = useState<Tab>(params.get('new') ? 'template' : 'room')
   const [bigQr, setBigQr] = useState(false)
   const [delOpen, setDelOpen] = useState(false)
   const [delPin, setDelPin] = useState('')
@@ -39,7 +42,7 @@ export default function TeacherRoom() {
   if (err) return <div className="center-card box"><p className="warn">{err}</p><Link className="btn" to="/teacher">내 방 목록</Link></div>
   if (!room) return <p className="center-card">불러오는 중이에요…</p>
 
-  const patch = async (p: Partial<Pick<Room, 'name' | 'is_open' | 'retention_days'>>) => {
+  const patch = async (p: Partial<Pick<Room, 'name' | 'is_open' | 'retention_days' | 'settings'>>) => {
     setRoom({ ...room, ...p })
     try { await rpc('update_room', { p_room: id, p_key: key, p_patch: p }) } catch (e) { setErr(friendly(e)) }
   }
@@ -60,7 +63,7 @@ export default function TeacherRoom() {
   const del = async () => {
     setDelErr('')
     try {
-      const r = await rpc<{ ok: boolean; error?: string }>('delete_room', { p_room: id, p_key: key, p_pin: delPin })
+      const r = await fn<{ ok: boolean; error?: string }>('delete-room', { room: id, key, pin: delPin })
       if (!r.ok) { setDelErr(friendly(r.error)); setDelPin(''); return }
       removeKey(id)
       nav('/teacher')
@@ -77,13 +80,13 @@ export default function TeacherRoom() {
         <div className="row">
           <button className={`btn ${tab === 'room' ? 'primary' : ''}`} onClick={() => setTab('room')}>🏫 방</button>
           <button className={`btn ${tab === 'roster' ? 'primary' : ''}`} onClick={() => setTab('roster')}>👧 명단 ({room.students.length})</button>
-          <button className="btn" disabled title="Phase 3">📚 템플릿</button>
-          <button className="btn" disabled title="Phase 7">📤 제출함</button>
+          <button className={`btn ${tab === 'template' ? 'primary' : ''}`} onClick={() => setTab('template')}>📚 템플릿</button>
+          <button className={`btn ${tab === 'inbox' ? 'primary' : ''}`} onClick={() => setTab('inbox')}>📤 제출함</button>
         </div>
       </div>
 
-      {params.get('new') && tab === 'room' && (
-        <p className="msg">방을 만들었어요 🎉 이 기기에 선생님 열쇠가 저장됐어요. PIN을 꼭 기억해 주세요.</p>
+      {params.get('new') && tab === 'template' && (
+        <p className="msg">방을 만들었어요 🎉 이 기기에 선생님 열쇠가 저장됐어요. PIN을 꼭 기억해 주세요. 먼저 이야기 템플릿을 골라요.</p>
       )}
 
       {tab === 'room' && (
@@ -119,6 +122,14 @@ export default function TeacherRoom() {
           </div>
 
           <div className="box">
+            <div className="field inline">
+              <span>학생 한 명이 내는 영상</span>
+              <button className={`btn ${!room.settings?.multiSubmit ? 'primary' : ''}`} onClick={() => patch({ settings: { ...room.settings, multiSubmit: false } })}>1개 (다시 내면 바꿔치기)</button>
+              <button className={`btn ${room.settings?.multiSubmit ? 'primary' : ''}`} onClick={() => patch({ settings: { ...room.settings, multiSubmit: true } })}>여러 개</button>
+            </div>
+          </div>
+
+          <div className="box">
             <h3>방 관리</h3>
             <button className="btn" onClick={duplicate}>📑 방 복제 (명단·템플릿 같이)</button>
             <button className="btn danger" onClick={() => setDelOpen(true)}>🗑 방 지우기</button>
@@ -138,6 +149,8 @@ export default function TeacherRoom() {
       )}
 
       {tab === 'roster' && <RosterEditor initial={room.students} onSave={saveStudents} />}
+      {tab === 'template' && <TemplateEditor room={id} tkey={key} />}
+      {tab === 'inbox' && <Inbox room={id} tkey={key} roomName={room.name} students={room.students} retentionDays={room.retention_days} />}
 
       {bigQr && (
         <div className="overlay" onClick={() => setBigQr(false)}>

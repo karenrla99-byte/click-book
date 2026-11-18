@@ -5,6 +5,7 @@ export const VIDEO_BPS = 1_500_000
 
 const CANDIDATES = [
   'video/mp4;codecs=avc1,mp4a.40.2',
+  'video/mp4;codecs=avc1,opus',
   'video/mp4;codecs=avc1',
   'video/mp4',
   'video/webm;codecs=vp9,opus',

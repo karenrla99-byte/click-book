@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",
+    "idb-keyval": "^6.3.0",
+    "jszip": "^3.10.2",
     "papaparse": "^5.7.1",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
