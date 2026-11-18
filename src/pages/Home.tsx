@@ -8,14 +8,15 @@ export default function Home() {
       className="home"
       left={
         <div className="home-left">
-          <p className="eyebrow">우리 반 그림책 만들기</p>
+          <p className="eyebrow">우리 반 그림 일기장</p>
           <h1 className="title"><Scribble>찰칵</Scribble><br />그림책</h1>
           <p className="subtitle">사진을 찍어<br />나만의 그림책을 만들어요</p>
-          <Link className="btn huge primary tilt" to="/join">🔑 방에 들어가요</Link>
+          <Link className="btn huge primary" to="/join">🔑 방에 들어가요</Link>
         </div>
       }
       right={
         <div className="toc">
+          <h2 className="toc-title">오늘 할 일</h2>
           {STEP_LABELS.map((s, i) => (
             <div key={s} className={`toc-item t${i}`}>
               <span className="toc-num">{i + 1}</span>

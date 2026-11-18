@@ -6,7 +6,6 @@ export function Spread({ left, right, leftNum, rightNum, className = '' }: {
 }) {
   return (
     <div className={`spread ${className}`}>
-      <Squiggle />
       <section className="page left">
         {left}
         {leftNum != null && <span className="corner-num left">{leftNum}</span>}
@@ -24,17 +23,7 @@ export function Pad({ children, className = '' }: { children: ReactNode; classNa
   return <div className={`pad ${className}`}><div className="pad-inner">{children}</div></div>
 }
 
-/** 책장 위를 가로지르는 손그림 선 */
-export function Squiggle() {
-  return (
-    <svg className="squiggle" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden>
-      <path d="M-20 250 C 180 320, 420 300, 560 -20" />
-      <path d="M-20 420 C 260 560, 620 480, 780 520 C 860 545, 820 600, 760 560 C 840 470, 930 390, 1020 330" />
-    </svg>
-  )
-}
-
-/** 글씨 밑 크레파스 밑줄 */
+/** 글씨에 형광펜 */
 export function Scribble({ children }: { children: ReactNode }) {
   return <span className="scribble">{children}</span>
 }
