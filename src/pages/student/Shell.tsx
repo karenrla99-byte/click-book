@@ -89,11 +89,18 @@ export default function Shell() {
       <div className="student">
         <nav className="step-nav">
           <span className="me-chip">🙂 {me.name}</span>
-          {STEPS.map((s, i) => (
-            <button key={s} className={`step-btn ${current === i ? 'now' : ''} ${me.level === '하' && s === 'connect' ? 'optional' : ''}`} onClick={() => go(s)}>
-              {NUM[i]} {STEP_LABELS[i]}
-            </button>
-          ))}
+          <div className="step-bar">
+            {STEPS.map((s, i) => (
+              <button
+                key={s}
+                className={`step-btn ${current === i ? 'now' : ''} ${current > i ? 'done' : ''} ${me.level === '하' && s === 'connect' ? 'optional' : ''}`}
+                onClick={() => go(s)}
+                aria-current={current === i ? 'step' : undefined}
+              >
+                <span className="step-n">{current > i ? '✓' : NUM[i]}</span> {STEP_LABELS[i]}
+              </button>
+            ))}
+          </div>
         </nav>
         <Outlet />
       </div>
