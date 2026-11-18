@@ -40,7 +40,11 @@ export default function Inbox({ room, tkey, roomName, students, retentionDays }:
     (await fn<{ urls: Record<string, string> }>('sign', { room, key: tkey, ids, download })).urls
 
   const open = async (student: Student, sub: Sub) => {
-    try { const u = await sign([sub.id]); setShow({ student, sub, url: u[sub.id] }) } catch (e) { setErr(friendly(e)) }
+    try {
+      const u = await sign([sub.id])
+      if (!u[sub.id]) return setErr(`${student.name}: 아직 영상 파일이 없어요 (보내는 중이거나 실패했어요)`)
+      setShow({ student, sub, url: u[sub.id] })
+    } catch (e) { setErr(friendly(e)) }
   }
   const downloadOne = async (student: Student, sub: Sub) => {
     const u = (await sign([sub.id]))[sub.id]
@@ -90,7 +94,7 @@ export default function Inbox({ room, tkey, roomName, students, retentionDays }:
           const st = !sub ? 'none' : sub.status
           const left = sub?.status === 'done' ? daysLeft(sub.expires_at) : null
           return (
-            <div key={s.id} className={`sub-card ${st}`} onClick={() => sub?.status === 'done' && open(s, sub)}>
+            <div key={s.id} className={`sub-card ${st}`} onClick={() => sub && open(s, sub)}>
               {sub?.status === 'done' && (
                 <input type="checkbox" className="sub-check" checked={checked.has(sub.id)} onClick={(e) => e.stopPropagation()}
                   onChange={(e) => { const n = new Set(checked); if (e.target.checked) n.add(sub.id); else n.delete(sub.id); setChecked(n) }} />
@@ -100,6 +104,7 @@ export default function Inbox({ room, tkey, roomName, students, retentionDays }:
               <span className="muted">
                 {st === 'done' ? `${new Date(sub!.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} · ${mb(sub!.size_bytes ?? 0)}` : st === 'uploading' ? '보내는 중' : '아직'}
               </span>
+              {st === 'uploading' && <span className="muted small">눌러서 확인해 봐요</span>}
               {left !== null && left <= 3 && <span className="warn small">{left <= 0 ? '오늘' : `${left}일 뒤`} 지워져요</span>}
             </div>
           )

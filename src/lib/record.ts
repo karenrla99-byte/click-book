@@ -30,23 +30,37 @@ export async function recordTimeline(
   player.frame(ctx, 0)
   rec.start(1000)
   await player.play(0)
+  const wall0 = performance.now()
   await new Promise<void>((resolve) => {
+    let done = false
+    const finish = () => { if (!done) { done = true; clearInterval(guard); resolve() } }
     const tick = () => {
+      if (done) return
       const t = player.time()
-      if (t >= player.total) return resolve()
+      if (t >= player.total) return finish()
       player.frame(ctx, t)
       onProgress(t / player.total)
       requestAnimationFrame(tick)
     }
     requestAnimationFrame(tick)
+    // 소리 시계가 멈추거나 화면 그리기가 멈춰도 끝나도록 지킴이
+    const guard = setInterval(() => {
+      const wall = (performance.now() - wall0) / 1000
+      if (player.time() >= player.total || wall > player.total * 1.2 + 5) finish()
+    }, 500)
   })
   player.frame(ctx, player.total)
   player.stop()
-  rec.stop()
-  await stopped
+  if (rec.state !== 'inactive') {
+    try { rec.requestData() } catch { /* 무시 */ }
+    rec.stop()
+    // 녹화기가 끝났다는 신호를 안 주는 기기가 있어 최대 8초만 기다림
+    await Promise.race([stopped, new Promise((r) => setTimeout(r, 8000))])
+  }
   stream.getTracks().forEach((t) => t.stop())
-  await ac.close()
-  await wake?.release().catch(() => {})
+  ac.close().catch(() => {})
+  wake?.release().catch(() => {})
+  if (!chunks.length) throw new Error('영상이 비어 있어요. 다시 만들어 주세요')
   onProgress(1)
   const type = mime.split(';')[0]
   return { blob: new Blob(chunks, { type }), mime, ext: type === 'video/mp4' ? 'mp4' : 'webm', duration: player.total }
