@@ -38,11 +38,18 @@ export default function View() {
 
   return (
     <div className="page-center">
-      <p className="room-name">{card.chapterTitle} · {i + 1} / {cards.length}</p>
-      <div className="story-card">
-        {showPlace && <div className="place-hint">{pl.icon}<span>{pl.label}</span></div>}
-        <p className="story-text">{card.text}</p>
-        <button className="btn icon big-icon" onClick={read} aria-label="읽어 주기">🔊</button>
+      <p className="room-name">{i + 1} / {cards.length}</p>
+      <div className="story-book">
+        <div className="sb-page sb-left">
+          <span className="eyebrow">{card.chapterTitle}</span>
+          {showPlace
+            ? <div className="place-hint">{pl.icon}<span>{pl.label}</span></div>
+            : <span className="sb-num">{i + 1}</span>}
+        </div>
+        <div className="sb-page sb-right">
+          <p className="story-text">{card.text}</p>
+          <button className="btn icon big-icon" onClick={read} aria-label="읽어 주기">🔊</button>
+        </div>
       </div>
       <div className="row center">
         <button className="btn huge" disabled={i === 0 && !opening} onClick={() => setI(i - 1)}>◀</button>

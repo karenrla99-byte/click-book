@@ -6,7 +6,56 @@ export const W = 1280
 export const H = 720
 export const TURN = 0.6 // 책장 넘김 전환(초)
 export const COPYRIGHT = '© 2026 특수교사 은티 · @special_eun_t'
-const FONT = '"Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
+const FONT = '"SchoolSafetyRoundedSmile", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
+const DISPLAY = '"SchoolSafetyFreeTime", "SchoolSafetyRoundedSmile", sans-serif'
+const C = { paper: '#f6efd3', ink: '#34302b', soft: '#776d61', mint: '#3fd69c', purple: '#6a4cc2', tomato: '#ef5a33' }
+
+/** 캔버스는 글꼴이 다 받아진 뒤에 그려야 해서 미리 불러 둔다 */
+export async function loadFonts() {
+  if (!document.fonts?.load) return
+  const t = new Promise((r) => setTimeout(r, 5000))
+  await Promise.race([t, Promise.all([
+    document.fonts.load('40px "SchoolSafetyRoundedSmile"'),
+    document.fonts.load('bold 40px "SchoolSafetyRoundedSmile"'),
+    document.fonts.load('40px "SchoolSafetyFreeTime"'),
+  ]).catch(() => {})])
+}
+
+let noise: HTMLCanvasElement | null = null
+/** 종이 바탕 (크림색 + 잔 무늬) */
+function paper(ctx: CanvasRenderingContext2D) {
+  ctx.fillStyle = C.paper
+  ctx.fillRect(0, 0, W, H)
+  if (!noise) {
+    noise = document.createElement('canvas')
+    noise.width = noise.height = 160
+    const g = noise.getContext('2d')!
+    const d = g.createImageData(160, 160)
+    for (let i = 0; i < d.data.length; i += 4) {
+      const v = 60 + Math.random() * 60
+      d.data[i] = v; d.data[i + 1] = v * 0.85; d.data[i + 2] = v * 0.5; d.data[i + 3] = Math.random() * 26
+    }
+    g.putImageData(d, 0, 0)
+  }
+  ctx.fillStyle = ctx.createPattern(noise, 'repeat')!
+  ctx.fillRect(0, 0, W, H)
+}
+
+function squiggle(ctx: CanvasRenderingContext2D, p = 1) {
+  ctx.save()
+  ctx.strokeStyle = C.mint
+  ctx.lineWidth = 3
+  ctx.lineCap = 'round'
+  ctx.setLineDash([2400])
+  ctx.lineDashOffset = 2400 * (1 - p)
+  ctx.beginPath()
+  ctx.moveTo(-20, 470)
+  ctx.bezierCurveTo(300, 640, 760, 520, 940, 580)
+  ctx.bezierCurveTo(1040, 610, 990, 680, 920, 640)
+  ctx.bezierCurveTo(1020, 520, 1150, 420, 1300, 360)
+  ctx.stroke()
+  ctx.restore()
+}
 
 type Img = ImageBitmap | HTMLImageElement | HTMLCanvasElement
 
@@ -77,6 +126,7 @@ export async function loadAssets(
   ns: string, project: Project, template: Template, ac: BaseAudioContext, opening?: Blob | null,
 ): Promise<Assets> {
   const a: Assets = { images: new Map(), videos: new Map(), audio: new Map(), urls: [] }
+  await loadFonts()
   const cardIds = new Set(flatCards(template.data).map((c) => c.id))
   const jobs: Promise<void>[] = []
   const decode = async (id: string) => {
@@ -198,9 +248,9 @@ export function wrap(ctx: CanvasRenderingContext2D, text: string, maxW: number, 
   return lines
 }
 
-function textBox(ctx: CanvasRenderingContext2D, text: string, opt: { y: number; size: number; bg: string; fg: string; anchor: 'top' | 'bottom'; maxLines?: number }) {
+function textBox(ctx: CanvasRenderingContext2D, text: string, opt: { y: number; size: number; bg: string; fg: string; anchor: 'top' | 'bottom'; maxLines?: number; display?: boolean; border?: string }) {
   if (!text) return
-  ctx.font = `bold ${opt.size}px ${FONT}`
+  ctx.font = opt.display ? `${opt.size}px ${DISPLAY}` : `bold ${opt.size}px ${FONT}`
   const lines = wrap(ctx, text, W - 200, opt.maxLines ?? 2)
   const lh = opt.size * 1.3
   const bw = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 64
@@ -209,8 +259,9 @@ function textBox(ctx: CanvasRenderingContext2D, text: string, opt: { y: number; 
   const by = opt.anchor === 'top' ? opt.y : opt.y - bh
   ctx.fillStyle = opt.bg
   ctx.beginPath()
-  ctx.roundRect(bx, by, bw, bh, 24)
+  ctx.roundRect(bx, by, bw, bh, [26, 12, 24, 14])
   ctx.fill()
+  if (opt.border) { ctx.strokeStyle = opt.border; ctx.lineWidth = 4; ctx.stroke() }
   ctx.fillStyle = opt.fg
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
@@ -300,21 +351,20 @@ export function drawScene(ctx: CanvasRenderingContext2D, sc: TScene, local: numb
       break
     }
     case 'title': {
-      const g = ctx.createLinearGradient(0, 0, W, H)
-      g.addColorStop(0, '#ffb35c')
-      g.addColorStop(1, '#ff7a59')
-      ctx.fillStyle = g
-      ctx.fillRect(0, 0, W, H)
+      paper(ctx)
+      squiggle(ctx, Math.min(1, local / 1.5))
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      ctx.font = `150px ${FONT}`
-      ctx.fillText('📖', W / 2, H * 0.3 - Math.abs(Math.sin(local * 3)) * 20)
-      ctx.fillStyle = '#fff'
-      ctx.font = `bold 64px ${FONT}`
-      wrap(ctx, sc.title, W - 160, 2).forEach((l, i) => ctx.fillText(l, W / 2, H * 0.56 + i * 78))
-      ctx.font = `bold 46px ${FONT}`
-      ctx.fillStyle = '#3b2a1a'
-      ctx.fillText(`${sc.name}의 그림책`, W / 2, H * 0.84)
+      ctx.fillStyle = C.tomato
+      ctx.font = `bold 30px ${FONT}`
+      ctx.fillText('찰칵 그림책', W / 2, 140)
+      ctx.fillStyle = C.ink
+      ctx.font = `86px ${DISPLAY}`
+      const lines = wrap(ctx, sc.title, W - 200, 2)
+      lines.forEach((l, i) => ctx.fillText(l, W / 2, 290 + i * 104 - (lines.length - 1) * 40))
+      ctx.fillStyle = C.purple
+      ctx.font = `56px ${DISPLAY}`
+      ctx.fillText(`${sc.name}의 그림책`, W / 2, 520 - Math.abs(Math.sin(local * 3)) * 8)
       break
     }
     case 'card': {
@@ -327,8 +377,7 @@ export function drawScene(ctx: CanvasRenderingContext2D, sc: TScene, local: numb
         const v = assets.videos.get(m.id)
         if (v) drawCover(ctx, v)
       } else {
-        ctx.fillStyle = '#fff3d6'
-        ctx.fillRect(0, 0, W, H)
+        paper(ctx)
         const pl = placeOf(sc.card.place)
         ctx.font = `260px ${FONT}`
         ctx.textAlign = 'center'
@@ -336,9 +385,9 @@ export function drawScene(ctx: CanvasRenderingContext2D, sc: TScene, local: numb
         ctx.fillText(pl?.icon ?? '🎤', W / 2, H / 2 + 20)
       }
       for (const st of sc.edit.stickers) drawSticker(ctx, st, local, assets)
-      textBox(ctx, sc.card.text, { y: 24, size: 38, bg: 'rgba(255,255,255,.9)', fg: '#3b2a1a', anchor: 'top' })
+      textBox(ctx, sc.card.text, { y: 24, size: 42, bg: 'rgba(246,239,211,.95)', fg: C.ink, anchor: 'top', display: true, border: C.ink })
       const sub = (sc.edit.text?.trim() || sc.edit.words.join(' · '))
-      textBox(ctx, sub, { y: H - 28, size: 50, bg: 'rgba(0,0,0,.65)', fg: '#fff', anchor: 'bottom' })
+      textBox(ctx, sub, { y: H - 28, size: 50, bg: 'rgba(52,48,43,.82)', fg: '#fffbea', anchor: 'bottom' })
       break
     }
     case 'greeting': {
@@ -346,57 +395,72 @@ export function drawScene(ctx: CanvasRenderingContext2D, sc: TScene, local: numb
         const v = assets.videos.get(sc.greeting.blobId)
         if (v) drawCover(ctx, v)
       } else {
-        ctx.fillStyle = '#ffe9c7'
-        ctx.fillRect(0, 0, W, H)
+        paper(ctx)
+        squiggle(ctx)
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
         const pulse = 1 + 0.08 * Math.sin(local * 5)
         ctx.font = `${200 * pulse}px ${FONT}`
         ctx.fillText('🎤', W / 2, H * 0.45)
-        ctx.fillStyle = '#3b2a1a'
-        ctx.font = `bold 52px ${FONT}`
+        ctx.fillStyle = C.purple
+        ctx.font = `60px ${DISPLAY}`
         ctx.fillText(`${sc.name}의 인사`, W / 2, H * 0.75)
       }
-      textBox(ctx, sc.prompt, { y: 24, size: 38, bg: 'rgba(255,255,255,.9)', fg: '#3b2a1a', anchor: 'top' })
+      textBox(ctx, sc.prompt, { y: 24, size: 42, bg: 'rgba(246,239,211,.95)', fg: C.ink, anchor: 'top', display: true, border: C.ink })
       break
     }
     case 'credits': {
-      ctx.fillStyle = '#1d1b2f'
-      ctx.fillRect(0, 0, W, H)
+      paper(ctx)
+      squiggle(ctx)
       const a = Math.min(1, local / 0.8)
       ctx.globalAlpha = a
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      ctx.fillStyle = '#ffc83d'
-      ctx.font = `bold 60px ${FONT}`
-      ctx.fillText('찰칵 그림책', W / 2, 110)
-      ctx.fillStyle = '#fff'
-      ctx.font = `bold 40px ${FONT}`
-      ctx.fillText(sc.title, W / 2, 190)
-      ctx.font = `bold 46px ${FONT}`
-      ctx.fillText(sc.byline, W / 2, 265)
+      ctx.fillStyle = C.tomato
+      ctx.font = `bold 30px ${FONT}`
+      ctx.fillText('찰칵 그림책', W / 2, 96)
+      ctx.fillStyle = C.ink
+      ctx.font = `52px ${DISPLAY}`
+      ctx.fillText(sc.title, W / 2, 170)
+      ctx.fillStyle = C.purple
+      ctx.font = `60px ${DISPLAY}`
+      ctx.fillText(sc.byline, W / 2, 255)
       const n = sc.thumbs.length
       if (n) {
-        const tw = 170
-        const th = 120
-        const gap = 18
+        const tw = 160
+        const th = 110
+        const gap = 26
         const x0 = (W - (n * tw + (n - 1) * gap)) / 2
         sc.thumbs.forEach((id, i) => {
           const img = assets.images.get(id)
           if (!img) return
+          const x = x0 + i * (tw + gap)
           ctx.save()
+          ctx.translate(x + tw / 2, 400)
+          ctx.rotate((i % 2 ? 1 : -1) * 0.04)
+          ctx.shadowColor = 'rgba(0,0,0,.2)'
+          ctx.shadowBlur = 10
+          ctx.fillStyle = '#fff'
+          ctx.fillRect(-tw / 2 - 8, -th / 2 - 8, tw + 16, th + 16)
+          ctx.shadowColor = 'transparent'
           ctx.beginPath()
-          ctx.roundRect(x0 + i * (tw + gap), 340, tw, th, 14)
+          ctx.rect(-tw / 2, -th / 2, tw, th)
           ctx.clip()
           const [sw, sh] = srcSize(img)
           const k = Math.max(tw / sw, th / sh)
-          ctx.drawImage(img, x0 + i * (tw + gap) + (tw - sw * k) / 2, 340 + (th - sh * k) / 2, sw * k, sh * k)
+          ctx.drawImage(img, -sw * k / 2, -sh * k / 2, sw * k, sh * k)
+          ctx.restore()
+          ctx.save()
+          ctx.fillStyle = 'rgba(255,214,92,.8)'
+          ctx.translate(x + tw / 2, 400 - th / 2 - 10)
+          ctx.rotate(-0.05)
+          ctx.fillRect(-26, -9, 52, 18)
           ctx.restore()
         })
       }
-      ctx.fillStyle = 'rgba(255,255,255,.75)'
-      ctx.font = `28px ${FONT}`
-      ctx.fillText(COPYRIGHT, W / 2, H - 70)
+      ctx.fillStyle = C.soft
+      ctx.font = `26px ${FONT}`
+      ctx.fillText(COPYRIGHT, W / 2, H - 60)
       break
     }
   }
