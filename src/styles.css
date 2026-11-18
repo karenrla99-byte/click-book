@@ -1,7 +1,7 @@
 /* ───────── 찰칵 그림책: 펼친 책 + 스케치북 ───────── */
-@font-face { font-family: 'SchoolSafetyRoundedSmile'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-5@1.0/HakgyoansimDunggeunmisoTTF-R.woff2') format('woff2'); font-weight: normal; font-display: swap; }
-@font-face { font-family: 'SchoolSafetyRoundedSmile'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-5@1.0/HakgyoansimDunggeunmisoTTF-B.woff2') format('woff2'); font-weight: 700; font-display: swap; }
-@font-face { font-family: 'SchoolSafetyFreeTime'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2508-2@1.0/HakgyoansimJayusiganR.woff2') format('woff2'); font-weight: normal; font-style: normal; font-display: swap; }
+@font-face { font-family: 'SchoolSafetyRoundedSmile'; src: url('/fonts/HakgyoansimDunggeunmisoTTF-R.woff2') format('woff2'); font-weight: normal; font-display: swap; }
+@font-face { font-family: 'SchoolSafetyRoundedSmile'; src: url('/fonts/HakgyoansimDunggeunmisoTTF-B.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'SchoolSafetyFreeTime'; src: url('/fonts/HakgyoansimJayusiganR.woff2') format('woff2'); font-weight: normal; font-style: normal; font-display: swap; }
 
 :root {
   --desk: #f2eee6;
@@ -24,8 +24,6 @@
   --hand: 22px 10px 20px 12px / 12px 20px 10px 22px;
   --noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .3  0 0 0 0 .25  0 0 0 0 .15  0 0 0 .05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   --wall: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='w'><feTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .4  0 0 0 0 .4  0 0 0 0 .4  0 0 0 .04 0'/></filter><rect width='100%' height='100%' filter='url(%23w)'/></svg>");
-  --coil: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='38' height='52'><circle cx='19' cy='38' r='5.5' fill='%23cbbf95'/><circle cx='19' cy='38' r='3.6' fill='%233b3732'/><path d='M19 38 C 7 30, 8 8, 19 4' fill='none' stroke='%23878580' stroke-width='4' stroke-linecap='round'/><path d='M19 4 C 27 6, 27 20, 22 30' fill='none' stroke='%23a9a7a1' stroke-width='3' stroke-linecap='round'/></svg>");
-  --wave: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='16' viewBox='0 0 120 16'><path d='M2 10 C 20 2, 30 14, 48 8 S 80 2, 96 9 S 112 12, 118 6' fill='none' stroke='%233fd69c' stroke-width='5' stroke-linecap='round'/></svg>");
 }
 
 * { box-sizing: border-box; }
@@ -62,13 +60,16 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: normal; color: var(--
 }
 .page { position: relative; z-index: 2; padding: 48px 60px 70px; display: flex; flex-direction: column; justify-content: center; gap: 18px; min-width: 0; }
 
-/* 스케치북 */
+/* 책 한 장 (왼쪽이 제본, 오른쪽에 겹친 페이지) */
 .pad {
-  position: relative; max-width: 1280px; margin: 30px auto 0; border-radius: 4px 4px 8px 8px;
-  box-shadow: 0 3px 0 #f4efe4, 0 6px 0 #ebe4d5, 0 9px 0 #e2d9c7, 0 26px 34px -20px rgba(80, 64, 40, .3);
+  position: relative; max-width: 1280px; margin: 6px auto 0; border-radius: 3px 8px 8px 3px;
+  box-shadow:
+    5px 1px 0 -1px #f6f1e6, 9px 3px 0 -2px #ece5d6, 12px 5px 0 -3px #e2d9c7,
+    0 30px 38px -24px rgba(80, 64, 40, .3), 0 8px 20px rgba(80, 64, 40, .08);
 }
-.pad::before { content: ''; position: absolute; left: 22px; right: 22px; top: -26px; height: 52px; background: var(--coil) repeat-x center / 38px 52px; pointer-events: none; }
-.pad-inner { padding: 46px 34px 30px; min-height: calc(100vh - 190px); }
+.pad::before { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 70px; pointer-events: none; border-radius: 3px 0 0 3px;
+  background: linear-gradient(90deg, rgba(90, 70, 40, .16), rgba(90, 70, 40, .05) 40%, transparent); }
+.pad-inner { position: relative; padding: 30px 34px 30px 58px; min-height: calc(100vh - 150px); }
 
 /* ── 글씨 ── */
 .eyebrow { margin: 0; font-size: 18px; letter-spacing: 1px; color: var(--ink-soft); font-weight: 700; }
@@ -162,7 +163,7 @@ textarea { width: 100%; }
 .step { padding: 6px 14px; border-radius: 6px; background: var(--paper-2); border: 2px solid var(--line); font-size: 19px; }
 .step.now { background: var(--sun); border-color: #c9b99c; }
 .student { display: flex; flex-direction: column; gap: 14px; }
-.step-nav { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; justify-content: center; margin-top: -8px; }
+.step-nav { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; justify-content: center; }
 .me-chip { font-family: var(--display); font-size: 28px; color: var(--purple); padding: 0 10px 4px; }
 .step-btn {
   min-height: 58px; padding: 0 18px; font: inherit; font-size: 20px; font-weight: 700; color: var(--ink); cursor: pointer;
@@ -347,7 +348,7 @@ textarea { width: 100%; }
   .story-book::before { display: none; }
   .sb-left, .sb-right { border-radius: 10px; }
   .main, .topbar { padding-left: 14px; padding-right: 14px; }
-  .pad-inner { padding: 40px 16px 22px; }
+  .pad-inner { padding: 24px 16px 22px 30px; }
   .keypad { grid-template-columns: repeat(3, 84px); }
 }
 .connect, .slot, .pb-item, .photobox, .keypad, .name-grid, .step-nav, .scene-canvas, .face-stage { user-select: none; -webkit-user-select: none; }
