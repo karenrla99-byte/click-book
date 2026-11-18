@@ -8,10 +8,13 @@ export function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promis
   })
 }
 
-/** Edge Function `click-book` 호출 */
+/** Edge Function 이름 (.env의 VITE_SUPABASE_FUNCTION, 없으면 click-book) */
+const FUNCTION = (import.meta.env.VITE_SUPABASE_FUNCTION as string | undefined) || 'click-book'
+
+/** Edge Function 호출 */
 export async function fn<T>(action: string, body: Record<string, unknown>): Promise<T> {
   if (!supabase) throw new Error('Supabase 설정이 아직 없어요')
-  const { data, error } = await withTimeout(supabase.functions.invoke('click-book', { body: { action, ...body } }), 30_000, `서버(${action})`)
+  const { data, error } = await withTimeout(supabase.functions.invoke(FUNCTION, { body: { action, ...body } }), 30_000, `서버(${action})`)
   if (error) {
     let msg = error.message
     try {
