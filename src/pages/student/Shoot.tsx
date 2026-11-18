@@ -16,7 +16,7 @@ export default function Shoot() {
   const card = cards[i]
   const pl = placeOf(card.place)
   const showPlace = pl && (!card.placeLowOnly || me.level === '하')
-  const mine = project.media.filter((m) => m.cardId === card.id)
+  const mine = project.media.filter((m) => m.cardId === card.id && !m.teacher)
 
   const add = async (blob: Blob, kind: 'photo' | 'video', duration?: number) => {
     const id = await putBlob(ns, blob, uid())
@@ -42,7 +42,7 @@ export default function Shoot() {
   }
 
   const read = async () => speak(card.text, card.audioPath ? await assetUrl(card.audioPath) : null)
-  const done = project.media.length > 0
+  const done = project.media.some((m) => !m.teacher)
 
   return (
     <div className="shoot">

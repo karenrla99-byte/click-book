@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { assetUrls, fn, uploadAsset } from '../lib/api'
 import { ping } from '../lib/realtime'
+import { shrinkImage } from '../lib/media'
 import { downloadBlob } from '../lib/record'
 import { speak } from '../lib/speak'
 import { friendly, rpc } from '../lib/supabase'
@@ -39,6 +40,48 @@ export default function TemplateEditor({ room, tkey, roomName }: Props) {
     setOpenUrl(undefined)
     if (opening) assetUrls({ room, key: tkey }, [opening.path]).then((u) => setOpenUrl(u[opening.path]))
   }, [opening, room, tkey])
+
+  // 선생님 사진 미리보기 주소
+  const tRef = useRef(t)
+  tRef.current = t
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
+  const photoKey = (t?.data.chapters ?? []).flatMap((ch) => ch.cards.flatMap((c) => c.photos ?? [])).join('|')
+  useEffect(() => {
+    const paths = photoKey ? photoKey.split('|') : []
+    const need = paths.filter((p) => !photoUrls[p])
+    if (need.length) assetUrls({ room, key: tkey }, need).then((u) => setPhotoUrls((o) => ({ ...o, ...u }))).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photoKey, room, tkey])
+
+  const withCardPhotos = (tpl: Template, ci: number, ki: number, fnc: (photos: string[]) => string[]): Template => ({
+    ...tpl,
+    data: {
+      ...tpl.data,
+      chapters: tpl.data.chapters.map((ch, i) => (i !== ci ? ch : {
+        ...ch, cards: ch.cards.map((c, j) => (j !== ki ? c : { ...c, photos: fnc(c.photos ?? []) })),
+      })),
+    },
+  })
+  const addPhotos = async (ci: number, ki: number, files: File[]) => {
+    if (!files.length) return
+    setBusy(true)
+    setMsg('사진을 올리는 중이에요…')
+    try {
+      const paths: string[] = []
+      for (const f of files.slice(0, 6)) paths.push(await uploadAsset(room, tkey, await shrinkImage(f), 'jpg'))
+      const next = withCardPhotos(tRef.current!, ci, ki, (ps) => [...ps, ...paths].slice(0, 6))
+      setT(next)
+      await save(next)
+    } catch (e) { setMsg(friendly(e)) }
+    setBusy(false)
+  }
+  const removePhoto = async (ci: number, ki: number, path: string) => {
+    if (!confirm('이 사진을 뺄까요?')) return
+    fn('delete-asset', { room, key: tkey, path }).catch(() => {})
+    const next = withCardPhotos(tRef.current!, ci, ki, (ps) => ps.filter((p) => p !== path))
+    setT(next)
+    await save(next)
+  }
 
   const change = (next: Template) => { setT(next); setDirty(true); setMsg('') }
   const save = async (tpl = t) => {
@@ -175,6 +218,24 @@ export default function TemplateEditor({ room, tkey, roomName }: Props) {
                     <button key={p.id} className={`btn small-chip ${c.place === p.id ? 'primary' : ''}`} onClick={() => setCard(ci, ki, { place: p.id })} title={p.label}>{p.icon} {p.label}</button>
                   ))}
                   <label className="check"><input type="checkbox" checked={c.placeLowOnly ?? true} onChange={(e) => setCard(ci, ki, { placeLowOnly: e.target.checked })} /> 하 수준만 보이기</label>
+                </div>
+                <div className="col">
+                  <span className="label">🧑‍🏫 선생님 사진 (학생 사진함에 나와요, 최대 6장)</span>
+                  <div className="teacher-photos">
+                    {(c.photos ?? []).map((p) => (
+                      <div key={p} className="tp">
+                        {photoUrls[p] && <img src={photoUrls[p]} alt="" />}
+                        <button className="thumb-del" onClick={() => removePhoto(ci, ki, p)} aria-label="사진 빼기">✕</button>
+                      </div>
+                    ))}
+                    {(c.photos?.length ?? 0) < 6 && (
+                      <label className={`btn small ${busy ? 'disabled' : ''}`}>
+                        ➕ 사진 올리기
+                        <input hidden type="file" accept="image/*" multiple disabled={busy}
+                          onChange={(e) => { const fs = Array.from(e.target.files ?? []); e.target.value = ''; addPhotos(ci, ki, fs) }} />
+                      </label>
+                    )}
+                  </div>
                 </div>
                 <div className="col">
                   <span className="label">단어 카드 (중 수준)</span>

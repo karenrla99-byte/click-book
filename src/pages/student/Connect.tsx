@@ -10,12 +10,17 @@ import { FlatCard, freeTextOn } from '../../lib/template'
 import { uid } from '../../lib/uid'
 import { useStudent } from './ctx'
 import { Thumb } from './Shoot'
+import { useTeacherPhotos } from './useTeacherPhotos'
 
 const EMOJIS = ['⭐', '❤️', '🌈', '😊', '👍', '🐰', '🐻', '🚌', '🍚', '🌸', '🎈', '🦋']
 
 /** ③ 연결하기: 위에 사진함 한 줄, 아래에 카드들. 카드를 누르면 꾸미기 */
 export default function Connect() {
-  const { cards, ns, project, update, go } = useStudent()
+  const c = useStudent()
+  const { cards, ns, project, update, go } = c
+  const loadingTeacher = useTeacherPhotos(c)
+  const mine = project.media.filter((m) => !m.teacher)
+  const teachers = project.media.filter((m) => m.teacher)
   const [picked, setPicked] = useState<string | null>(null)
   const [open, setOpen] = useState<string | null>(null)
 
@@ -34,8 +39,8 @@ export default function Connect() {
 
       <div className="photostrip">
         <span className="strip-label">📸 내 사진</span>
-        {project.media.length === 0 && <span className="muted">아직 찍은 것이 없어요. ② 찍기에서 찍어요.</span>}
-        {project.media.map((m) => (
+        {mine.length === 0 && <span className="muted">아직 찍은 것이 없어요</span>}
+        {mine.map((m) => (
           <div
             key={m.id}
             className="pb-item"
@@ -45,6 +50,23 @@ export default function Connect() {
             <Thumb ns={ns} m={m} selected={picked === m.id} />
           </div>
         ))}
+        {(teachers.length > 0 || loadingTeacher) && (
+          <>
+            <span className="strip-sep" />
+            <span className="strip-label">🧑‍🏫 선생님 사진</span>
+            {loadingTeacher && teachers.length === 0 && <span className="muted">불러오는 중이에요…</span>}
+            {teachers.map((m) => (
+              <div
+                key={m.id}
+                className="pb-item from-teacher"
+                onPointerDown={(e) => startDrag(e, (cardId) => link(cardId, m.id))}
+                onClick={(e) => { if (!wasDragged(e.currentTarget)) setPicked(picked === m.id ? null : m.id) }}
+              >
+                <Thumb ns={ns} m={m} selected={picked === m.id} />
+              </div>
+            ))}
+          </>
+        )}
       </div>
 
       <div className="slot-grid">

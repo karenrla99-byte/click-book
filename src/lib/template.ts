@@ -10,6 +10,8 @@ export type Card = {
   place?: string | null
   placeLowOnly?: boolean // 장소 힌트를 '하' 수준에게만
   words: string[]
+  /** 선생님이 미리 올린 사진 (room-assets 경로) — 학생 사진함에 '선생님 사진'으로 나옴 */
+  photos?: string[]
 }
 export type Chapter = { id: string; title: string; cards: Card[] }
 export type Level = '상' | '중' | '하'
@@ -125,7 +127,7 @@ export function exportTemplate(t: Template): string {
   const data: TemplateData = {
     ...t.data,
     opening: null,
-    chapters: t.data.chapters.map((ch) => ({ ...ch, cards: ch.cards.map((c) => ({ ...c, audioPath: null })) })),
+    chapters: t.data.chapters.map((ch) => ({ ...ch, cards: ch.cards.map((c) => ({ ...c, audioPath: null, photos: [] })) })),
   }
   return JSON.stringify({ app: 'click-book', title: t.title, data }, null, 2)
 }
@@ -146,7 +148,7 @@ export function importTemplate(text: string): Template {
         id: uid(), title: String(ch.title ?? ''),
         cards: (ch.cards ?? []).map((c) => ({
           id: uid(), text: String(c.text ?? ''), media: (['photo', 'video', 'both'].includes(c.media) ? c.media : 'both') as MediaKind,
-          place: c.place ?? null, placeLowOnly: c.placeLowOnly ?? true, words: Array.isArray(c.words) ? c.words.map(String) : [], audioPath: null,
+          place: c.place ?? null, placeLowOnly: c.placeLowOnly ?? true, words: Array.isArray(c.words) ? c.words.map(String) : [], audioPath: null, photos: [],
         })),
       })),
     },

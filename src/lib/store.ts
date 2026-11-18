@@ -13,7 +13,15 @@ export const EFFECTS: { id: Effect; label: string }[] = [
   { id: 'wiggle', label: '흔들흔들' },
 ]
 
-export type MediaItem = { id: string; kind: 'photo' | 'video'; cardId?: string | null; createdAt: number; duration?: number }
+export type MediaItem = {
+  id: string
+  kind: 'photo' | 'video'
+  cardId?: string | null
+  createdAt: number
+  duration?: number
+  /** 선생님 사진이면 그 경로 (태블릿에 내려받아 둠) */
+  teacher?: string
+}
 export type Sticker = {
   id: string
   kind: 'emoji' | 'face'
