@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import FaceCrop from '../../components/FaceCrop'
+import Guide from '../../components/Guide'
 import ScenePreview from '../../components/ScenePreview'
 import VoiceButton from '../../components/VoiceButton'
 import { startDrag, wasDragged } from '../../lib/drag'
 import { speak } from '../../lib/speak'
 import { EFFECTS, Effect, SceneEdit, Sticker, emptyScene } from '../../lib/store'
-import { FlatCard } from '../../lib/template'
+import { FlatCard, freeTextOn } from '../../lib/template'
 import { uid } from '../../lib/uid'
 import { useStudent } from './ctx'
 import { Thumb } from './Shoot'
@@ -14,7 +15,7 @@ const EMOJIS = ['⭐', '❤️', '🌈', '😊', '👍', '🐰', '🐻', '🚌',
 
 /** ③ 연결하기 + 꾸미기 (수준별) */
 export default function Connect() {
-  const { cards, me, ns, project, update, go } = useStudent()
+  const { cards, ns, project, update, go } = useStudent()
   const [picked, setPicked] = useState<string | null>(null)
   const [open, setOpen] = useState<string | null>(null)
 
@@ -27,15 +28,9 @@ export default function Connect() {
   const openCard = cards.find((c) => c.id === open)
   if (openCard) return <Decorate card={openCard} onClose={() => setOpen(null)} />
 
-  const hint = me.level === '하'
-    ? '찍은 사진이 카드에 벌써 들어갔어요. 카드를 누르면 한 마디 녹음할 수 있어요.'
-    : '사진을 끌어서 카드에 놓아요. (사진을 누르고 → 카드를 눌러도 돼요)'
-
   return (
     <div className="connect">
-      <p className="hint">
-        {hint} <button className="btn icon" onClick={() => speak(hint)} aria-label="읽어 주기">🔊</button>
-      </p>
+      <Guide step="connect" />
       <div className="connect-grid">
         <div className="slots">
           {cards.map((c) => {
@@ -86,7 +81,7 @@ export default function Connect() {
 }
 
 function Decorate({ card, onClose }: { card: FlatCard; onClose: () => void }) {
-  const { me, ns, project, update } = useStudent()
+  const { me, ns, project, update, template } = useStudent()
   const edit = project.scenes[card.id] ?? emptyScene()
   const media = project.media.find((m) => m.id === edit.mediaId)
   const [sel, setSel] = useState<string | null>(null)
@@ -94,6 +89,8 @@ function Decorate({ card, onClose }: { card: FlatCard; onClose: () => void }) {
   const [choosingFace, setChoosingFace] = useState(false)
   const photos = project.media.filter((m) => m.kind === 'photo')
   const level = me.level
+  const canWrite = freeTextOn(template.data, level)
+  const [openWrite, setOpenWrite] = useState(level !== '하' || !!edit.text)
 
   const set = (patch: Partial<SceneEdit>) =>
     update((p) => ({ ...p, scenes: { ...p.scenes, [card.id]: { ...(p.scenes[card.id] ?? emptyScene()), ...patch } } }))
@@ -105,6 +102,14 @@ function Decorate({ card, onClose }: { card: FlatCard; onClose: () => void }) {
   }
   const selected = edit.stickers.find((s) => s.id === sel)
   const toggleWord = (w: string) => set({ words: edit.words.includes(w) ? edit.words.filter((x) => x !== w) : [...edit.words, w] })
+  /** 직접 쓰기가 켜져 있으면 단어 카드가 자막 칸에 이어 붙음 (그다음 고쳐 쓸 수 있음) */
+  const pickWord = (w: string) => {
+    if (!canWrite) return toggleWord(w)
+    const t = (edit.text ?? '').trim()
+    set({ text: (t ? `${t} ${w}` : w).slice(0, 40) })
+    setOpenWrite(true)
+  }
+  const wordOn = (w: string) => (canWrite ? (edit.text ?? '').includes(w) : edit.words.includes(w))
 
   return (
     <div className="decorate">
@@ -133,23 +138,28 @@ function Decorate({ card, onClose }: { card: FlatCard; onClose: () => void }) {
           <VoiceButton ns={ns} blobId={edit.voiceId} onChange={(id, d) => set({ voiceId: id, voiceDuration: d })} />
         </section>
 
-        {level === '상' && (
-          <section>
-            <h4>✏️ 글로 써도 돼요</h4>
-            <input value={edit.text ?? ''} maxLength={40} placeholder="자막으로 나와요" onChange={(e) => set({ text: e.target.value })} />
-          </section>
-        )}
-
         {level !== '하' && card.words.length > 0 && (
           <section>
-            <h4>💬 단어 카드를 골라요</h4>
+            <h4>💬 단어 카드를 골라요{canWrite ? ' (누르면 자막에 들어가요)' : ''}</h4>
             <div className="row">
               {card.words.map((w) => (
-                <button key={w} className={`btn word ${edit.words.includes(w) ? 'primary' : ''}`} onClick={() => { toggleWord(w); speak(w) }}>{w}</button>
+                <button key={w} className={`btn word ${wordOn(w) ? 'primary' : ''}`} onClick={() => { pickWord(w); speak(w) }}>{w}</button>
               ))}
             </div>
           </section>
         )}
+
+        {canWrite && (openWrite ? (
+          <section>
+            <h4>✏️ 자막을 써요</h4>
+            <div className="row">
+              <input className="grow" value={edit.text ?? ''} maxLength={40} placeholder="영상 아래에 자막으로 나와요" onChange={(e) => set({ text: e.target.value })} />
+              {!!edit.text && <button className="btn icon" onClick={() => set({ text: '' })} aria-label="자막 지우기">⌫</button>}
+            </div>
+          </section>
+        ) : (
+          <button className="btn" onClick={() => setOpenWrite(true)}>✏️ 자막 쓰기</button>
+        ))}
 
         {level !== '하' && (
           <section>

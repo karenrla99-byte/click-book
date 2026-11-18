@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Camera from '../../components/Camera'
+import Guide from '../../components/Guide'
 import VoiceButton from '../../components/VoiceButton'
 import { useBlobUrl } from '../../lib/blobUrl'
 import { speak } from '../../lib/speak'
@@ -22,6 +23,7 @@ export default function Greet() {
 
   return (
     <div className="page-center">
+      <Guide step="greet" />
       <h1 className="page-title">
         👋 {prompt} <button className="btn icon" onClick={() => speak(prompt)} aria-label="읽어 주기">🔊</button>
       </h1>

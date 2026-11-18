@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Camera from '../../components/Camera'
+import Guide from '../../components/Guide'
 import { useBlobUrl } from '../../lib/blobUrl'
 import { speak } from '../../lib/speak'
 import { MediaItem, delBlob, emptyScene, putBlob } from '../../lib/store'
@@ -45,6 +46,7 @@ export default function Shoot() {
 
   return (
     <div className="shoot">
+      <Guide step="shoot" />
       <div className="shoot-card">
         <button className="btn icon" onClick={() => setI(Math.max(0, i - 1))} disabled={i === 0} aria-label="앞 카드">◀</button>
         <div className="shoot-text">

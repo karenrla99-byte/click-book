@@ -149,7 +149,7 @@ export default function TeacherRoom() {
       )}
 
       {tab === 'roster' && <RosterEditor initial={room.students} onSave={saveStudents} />}
-      {tab === 'template' && <TemplateEditor room={id} tkey={key} />}
+      {tab === 'template' && <TemplateEditor room={id} tkey={key} roomName={room.name} />}
       {tab === 'inbox' && <Inbox room={id} tkey={key} roomName={room.name} students={room.students} retentionDays={room.retention_days} />}
 
       {bigQr && (

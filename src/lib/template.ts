@@ -12,12 +12,50 @@ export type Card = {
   words: string[]
 }
 export type Chapter = { id: string; title: string; cards: Card[] }
+export type Level = '상' | '중' | '하'
+export type StepKey = 'view' | 'shoot' | 'connect' | 'greet' | 'preview' | 'send'
+/** 단계 안내 문구: all = 모두, 수준별로 다르게 쓰면 그 수준 것이 먼저 */
+export type Guide = { all?: string; 상?: string; 중?: string; 하?: string }
 export type TemplateData = {
   version: 1
   opening?: { path: string; kind: 'video' | 'image' } | null
   chapters: Chapter[]
   greeting: string
+  guides?: Partial<Record<StepKey, Guide>>
+  /** 꾸미기에서 아이가 자막을 직접 쓸 수 있는지 (수준별) */
+  freeText?: Record<Level, boolean>
 }
+
+export const STEP_INFO: { key: StepKey; label: string }[] = [
+  { key: 'view', label: '① 카드 보기' },
+  { key: 'shoot', label: '② 찍기' },
+  { key: 'connect', label: '③ 꾸미기' },
+  { key: 'greet', label: '④ 인사' },
+  { key: 'preview', label: '⑤ 미리보기' },
+  { key: 'send', label: '⑥ 보내기' },
+]
+
+/** 교사가 비워 두면 나오는 기본 안내 */
+export const DEFAULT_GUIDES: Record<StepKey, Guide> = {
+  view: { all: '카드를 보고 🔊를 눌러 들어요' },
+  shoot: { all: '카드에 맞는 사진이나 영상을 찍어요' },
+  connect: {
+    all: '사진을 끌어서 카드에 놓아요. 사진을 누르고 카드를 눌러도 돼요',
+    하: '찍은 사진이 카드에 벌써 들어갔어요. 카드를 누르면 꾸밀 수 있어요',
+  },
+  greet: { all: '영상이나 목소리로 인사해요' },
+  preview: { all: '내 그림책을 처음부터 봐요' },
+  send: { all: '다 만들었으면 선생님께 보내요' },
+}
+
+export function guideText(d: TemplateData | undefined, step: StepKey, level: Level): string {
+  const g = d?.guides?.[step]
+  const def = DEFAULT_GUIDES[step]
+  return (g?.[level]?.trim() || g?.all?.trim() || def[level] || def.all || '')
+}
+
+export const DEFAULT_FREE_TEXT: Record<Level, boolean> = { 상: true, 중: true, 하: true }
+export const freeTextOn = (d: TemplateData | undefined, level: Level) => (d?.freeText ?? DEFAULT_FREE_TEXT)[level]
 export type Template = { id?: string; title: string; data: TemplateData; updated_at?: string }
 
 export const PLACES = [
@@ -102,6 +140,8 @@ export function importTemplate(text: string): Template {
       version: 1,
       opening: null,
       greeting: data.greeting ?? '하고 싶은 말',
+      guides: data.guides ?? undefined,
+      freeText: data.freeText ?? undefined,
       chapters: data.chapters.map((ch) => ({
         id: uid(), title: String(ch.title ?? ''),
         cards: (ch.cards ?? []).map((c) => ({

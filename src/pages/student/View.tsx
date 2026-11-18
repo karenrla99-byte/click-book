@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { speak } from '../../lib/speak'
+import Guide from '../../components/Guide'
 import { placeOf } from '../../lib/template'
 import { useStudent } from './ctx'
 
@@ -38,6 +39,7 @@ export default function View() {
 
   return (
     <div className="page-center">
+      <Guide step="view" />
       <p className="room-name">{i + 1} / {cards.length}</p>
       <div className="story-book">
         <div className="sb-page sb-left">

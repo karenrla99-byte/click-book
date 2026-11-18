@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import Guide from '../../components/Guide'
 import { fn, uploadSigned, withTimeout } from '../../lib/api'
 import { ping } from '../../lib/realtime'
 import { downloadBlob, recordTimeline } from '../../lib/record'
@@ -131,6 +132,7 @@ export default function Send() {
 
   return (
     <div className="page-center">
+      <Guide step="send" />
       {phase === 'failed' && (
         <div className="box warn-box">
           <p>😢 보내지 못했어요. 와이파이를 확인하고 다시 보내요. (영상은 태블릿에 남아 있어요)</p>
