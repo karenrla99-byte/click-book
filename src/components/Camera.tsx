@@ -102,11 +102,13 @@ export default function Camera({ mode, facing: initial = 'environment', maxSec =
 
   return (
     <div className="camera">
+      <div className="stage">
       <div className="cam-view">
         <video ref={videoRef} playsInline muted className={facing === 'user' ? 'mirror' : ''} />
         {flash && <div className="cam-flash" />}
         {recording && <div className="cam-rec">🔴 {left}초</div>}
         {!stream && <div className="cam-wait">카메라를 켜는 중이에요…</div>}
+      </div>
       </div>
       <div className="cam-buttons">
         <button className="btn icon" onClick={() => setFacing(facing === 'user' ? 'environment' : 'user')} disabled={recording} aria-label="앞/뒤 카메라 바꾸기">🔄</button>

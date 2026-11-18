@@ -187,7 +187,7 @@ textarea { width: 100%; }
 .story-text { font-family: var(--display); font-size: clamp(34px, 4vw, 50px); margin: 0; line-height: 1.35; color: var(--ink); }
 .place-hint { display: flex; flex-direction: column; align-items: center; font-size: 96px; line-height: 1; }
 .place-hint span { font-size: 24px; margin-top: 6px; font-weight: 700; color: var(--purple); }
-.opening { max-width: min(960px, 100%); max-height: 58vh; border-radius: 6px; background: #000; border: 8px solid #fff; box-shadow: 0 10px 20px rgba(0,0,0,.2); }
+.opening { object-fit: contain; max-width: min(960px, 100%); max-height: 58vh; border-radius: 6px; background: #000; border: 8px solid #fff; box-shadow: 0 10px 20px rgba(0,0,0,.2); }
 .opening.small { max-height: 220px; }
 
 /* ── 사진·영상 (테이프 붙인 사진) ── */
@@ -412,3 +412,72 @@ input::placeholder, textarea::placeholder { color: #c4b8a6; }
 .tool-tab:first-child { border-left: none; }
 .tool-tab.on { background: var(--mint); color: var(--ink); }
 .center-text { text-align: center; }
+
+/* ── 태블릿 한 화면에 맞추기 (학생 작업 화면) ── */
+.stage > * { width: 100%; }
+@media (min-width: 901px) {
+  .app.fit { height: 100vh; height: 100dvh; overflow: hidden; }
+  .app.fit .topbar { padding-top: 8px; }
+  .app.fit .btn.top-btn { min-height: 46px; font-size: 16px; }
+  .app.fit .main { flex: 1; min-height: 0; display: flex; padding: 8px 22px 0; }
+  .app.fit .pad { flex: 1; min-height: 0; width: 100%; display: flex; margin: 0 auto; }
+  .app.fit .pad-inner { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 12px 22px 12px 48px; }
+  .app.fit .footer { padding: 6px 4px 8px; font-size: 13px; }
+  .app.fit .student { flex: 1; min-height: 0; gap: 10px; }
+  .app.fit .student > :not(.step-nav) { flex: 1; min-height: 0; }
+  .app.fit .step-btn { min-height: 52px; }
+  .app.fit .guide { font-size: 19px; padding-top: 2px; padding-bottom: 2px; }
+  .app.fit .guide .btn.icon { width: 44px; min-height: 44px; font-size: 19px; }
+  .app.fit .page-center { gap: 10px; }
+  .app.fit .btn.huge { min-height: 78px; font-size: 30px; }
+  .app.fit .btn.big { min-height: 66px; font-size: 25px; padding: 0 28px; }
+
+  /* 16:9 무대: 남는 높이에 맞춰 줄었다 늘었다 */
+  .app.fit .stage { flex: 1; min-height: 0; width: 100%; container-type: size; display: grid; place-items: center; }
+  .app.fit .stage > * { width: min(100cqw, 100cqh * 16 / 9) !important; max-width: none; max-height: 100cqh; aspect-ratio: 16 / 9; margin: 0; }
+  .app.fit .stage > .cam-view, .app.fit .stage > .preview-wrap > canvas, .app.fit .stage > canvas { box-sizing: border-box; }
+  .app.fit .stage > p { width: auto !important; aspect-ratio: auto; }
+  .app.fit .camera { flex: 1; min-height: 0; width: 100%; gap: 10px; }
+  .app.fit .cam-view { max-height: none; }
+  .app.fit .preview-wrap canvas { height: 100%; }
+
+  /* ① */
+  .app.fit .story-book { flex: 1; min-height: 0; max-height: 520px; }
+  .app.fit .story-text { font-size: clamp(28px, 5.2vh, 48px); }
+  .app.fit .place-hint { font-size: clamp(60px, 11vh, 96px); }
+  /* ② */
+  .app.fit .shoot { gap: 8px; }
+  .app.fit .shoot-card { padding: 4px 10px; }
+  .app.fit .shoot-text { font-size: 26px; }
+  .app.fit .thumbs { min-height: 0; padding-top: 10px; }
+  .app.fit .shoot .thumb { width: 96px; }
+  /* ③ */
+  .app.fit .connect { gap: 10px; }
+  .app.fit .photostrip { flex: 0 0 auto; min-height: 0; padding: 14px 12px 8px; }
+  .app.fit .photostrip .pb-item { flex: 0 0 120px; }
+  .app.fit .slot-grid { flex: 1; min-height: 0; overflow-y: auto; grid-auto-rows: minmax(150px, 1fr); padding: 4px; }
+  .app.fit .slot-grid .slot { min-height: 0; }
+  .app.fit .slot-grid .slot-media { flex: 1; min-height: 0; aspect-ratio: auto; }
+  .app.fit .slot-grid .slot-media { position: relative; min-height: 60px; }
+  .app.fit .slot-grid .slot-media .thumb { position: absolute; inset: 10% 6% 4%; width: auto; height: auto; aspect-ratio: auto; transform: none; }
+  .app.fit .slot-grid .slot-text { font-size: 19px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .app.fit .decorate { gap: 10px; }
+  .app.fit .deco-q { font-size: 26px; }
+  .app.fit .deco-head .btn.big { min-height: 58px; font-size: 22px; }
+  .app.fit .deco-stage { width: 100%; min-width: 0; min-height: 24vh; }
+  .app.fit .deco-head, .app.fit .tool-tabs, .app.fit .deco-panel, .app.fit .step-nav, .app.fit .guide, .app.fit .photostrip, .app.fit .shoot-card, .app.fit .cam-buttons, .app.fit .shoot-bottom { flex-shrink: 0; }
+  .app.fit .deco-panel .btn { flex-shrink: 0; }
+  .app.fit .tool-tab { min-height: 56px; font-size: 22px; }
+  .app.fit .deco-panel { padding: 10px; gap: 8px; }
+  .app.fit .deco-panel { max-width: none; }
+  .app.fit .deco-panel .row { gap: 6px; justify-content: center; width: 100%; }
+  .app.fit .deco-panel .btn.emoji { width: 56px; min-height: 56px; font-size: 28px; }
+  .app.fit .deco-panel .btn { min-height: 56px; }
+  /* ④ ⑤ */
+  .app.fit .greet-video { max-height: 42vh; }
+}
+@media (min-width: 901px) and (max-height: 700px) {
+  .app.fit .deco-tip { display: none; }
+  .app.fit .guide { display: none; }
+  .app.fit .topbar { padding-top: 4px; }
+}

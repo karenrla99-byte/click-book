@@ -12,6 +12,8 @@ export default function Layout() {
   const { pathname } = useLocation()
   const isHome = pathname === '/'
   const isTeacher = pathname.startsWith('/teacher')
+  /** 학생 작업 화면은 태블릿 한 화면에 꼭 맞춤 (스크롤 없이) */
+  const fit = /^\/r\/[^/]+\/s\//.test(pathname)
   const [full, setFull] = useState(!!document.fullscreenElement)
 
   useEffect(() => {
@@ -26,7 +28,7 @@ export default function Layout() {
   }
 
   return (
-    <div className="app">
+    <div className={`app ${fit ? 'fit' : ''}`}>
       <header className="topbar">
         <button className="btn top-btn" onClick={toggleFull}>{full ? '↙ 작게' : '⛶ 전체화면'}</button>
         {!isHome && <Link className="btn top-btn" to="/">🏠 처음</Link>}

@@ -61,9 +61,11 @@ export default function Preview() {
   return (
     <div className="page-center preview-page">
       <Guide step="preview" />
+      <div className="stage">
       <div className="preview-wrap">
         <canvas ref={canvas} width={W} height={H} className="preview-canvas" onClick={toggle} />
         {!ready && <div className="cam-wait">그림책을 펼치는 중이에요…</div>}
+      </div>
       </div>
       <div className="bar thin"><div style={{ width: `${total ? (pos / total) * 100 : 0}%` }} /></div>
       <div className="row center">

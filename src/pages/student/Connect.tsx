@@ -123,7 +123,7 @@ function Decorate({ card, onClose }: { card: FlatCard; onClose: () => void }) {
         <button className="btn big primary" onClick={onClose}>✅ 다 했어요</button>
       </div>
 
-      <div className="deco-stage">
+      <div className="stage deco-stage">
         <ScenePreview ns={ns} card={card} edit={edit} media={media} selected={sel} onSelect={setSel}
           onMove={(id, x, y) => setSticker(id, { x, y })} />
       </div>
@@ -180,17 +180,15 @@ function Decorate({ card, onClose }: { card: FlatCard; onClose: () => void }) {
           {tool === 'sticker' && (
             <div className="deco-panel">
               <div className="row center">
-                {EMOJIS.map((em) => <button key={em} className="btn icon emoji" onClick={() => addSticker({ kind: 'emoji', emoji: em })}>{em}</button>)}
-              </div>
-              <div className="row center">
                 {photos.length > 0 && <button className="btn" onClick={() => setChoosingFace(true)}>😀 얼굴 쏙</button>}
                 {media?.kind === 'photo' && (
                   <button className={`btn ${edit.kenBurns ? 'primary' : ''}`} onClick={() => set({ kenBurns: !edit.kenBurns })}>
-                    🔍 천천히 확대 {edit.kenBurns ? '켜짐' : '꺼짐'}
+                    🔍 확대 {edit.kenBurns ? '켜짐' : '꺼짐'}
                   </button>
                 )}
+                {EMOJIS.map((em) => <button key={em} className="btn icon emoji" onClick={() => addSticker({ kind: 'emoji', emoji: em })}>{em}</button>)}
               </div>
-              <p className="muted center-text">붙인 것을 누르면 움직임을 고르고, 끌어서 옮겨요</p>
+              <p className="muted center-text deco-tip">붙인 것을 누르면 움직임을 고르고, 끌어서 옮겨요</p>
             </div>
           )}
         </>

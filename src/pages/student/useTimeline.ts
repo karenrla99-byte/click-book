@@ -8,7 +8,10 @@ export async function prepare(c: StudentCtx, ac: BaseAudioContext): Promise<{ as
   if (op) {
     try {
       const url = await c.assetUrl(op.path)
-      if (url) opening = await (await fetch(url)).blob()
+      if (url) {
+        const r = await fetch(url)
+        if (r.ok) opening = await r.blob()
+      }
     } catch { /* 여는 영상 없이 진행 */ }
   }
   const assets = await loadAssets(c.ns, c.project, c.template, ac, opening)

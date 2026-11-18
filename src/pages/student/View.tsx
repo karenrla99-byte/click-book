@@ -24,11 +24,13 @@ export default function View() {
   if (i === -1 && opening) return (
     <div className="page-center">
       <h1 className="page-title">🎬 {template.title}</h1>
-      {openUrl
-        ? opening.kind === 'video'
-          ? <video className="opening" src={openUrl} controls autoPlay playsInline onEnded={() => setI(0)} />
-          : <img className="opening" src={openUrl} alt="" />
-        : <p>불러오는 중이에요…</p>}
+      <div className="stage">
+        {openUrl
+          ? opening.kind === 'video'
+            ? <video className="opening" src={openUrl} controls autoPlay playsInline onEnded={() => setI(0)} />
+            : <img className="opening" src={openUrl} alt="" />
+          : <p>불러오는 중이에요…</p>}
+      </div>
       <button className="btn big primary" onClick={() => setI(0)}>카드 보기 ▶</button>
     </div>
   )

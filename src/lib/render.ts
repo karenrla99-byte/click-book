@@ -155,7 +155,8 @@ export async function loadAssets(
     if (opening.type.startsWith('video')) a.videos.set('opening', await toVideo(opening, a.urls))
     else a.images.set('opening', await toImage(opening))
   })())
-  await Promise.all(jobs)
+  // 파일 하나가 깨져도 나머지로 계속 (그 장면만 빠짐)
+  await Promise.all(jobs.map((j) => j.catch(() => {})))
   return a
 }
 
