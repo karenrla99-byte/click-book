@@ -83,10 +83,9 @@ function PhotoPicker({ card, current, onPick, onClose }: {
   card: FlatCard; current: string | null; onPick: (mediaId: string | null) => void; onClose: () => void
 }) {
   const { ns, project, go } = useStudent()
-  const mine = [...project.media.filter((m) => !m.teacher)].sort((a, b) => Number(b.cardId === card.id) - Number(a.cardId === card.id))
-  const teacher = project.media.filter((m) => m.teacher).sort((a, b) => Number(b.cardId === card.id) - Number(a.cardId === card.id))
-  const [tab, setTab] = useState<'mine' | 'teacher'>(mine.length || !teacher.length ? 'mine' : 'teacher')
-  const list = tab === 'mine' ? mine : teacher
+  // 내 사진·선생님 사진 구분 없이 한곳에. 이 카드 것 먼저, 그다음 찍은 순서
+  const list = [...project.media].sort((a, b) =>
+    Number(b.cardId === card.id) - Number(a.cardId === card.id) || Number(!!a.teacher) - Number(!!b.teacher) || a.createdAt - b.createdAt)
 
   return (
     <div className="modal sheet" onClick={onClose}>
@@ -96,23 +95,17 @@ function PhotoPicker({ card, current, onPick, onClose }: {
           <p className="picker-q">{card.text}</p>
           {current ? <button className="btn" onClick={() => onPick(null)}>사진 빼기</button> : <span className="picker-pad" />}
         </div>
-        {teacher.length > 0 && (
-          <div className="tool-tabs picker-tabs">
-            <button className={`tool-tab ${tab === 'mine' ? 'on' : ''}`} onClick={() => setTab('mine')}>📸 내가 찍은 사진 ({mine.length})</button>
-            <button className={`tool-tab ${tab === 'teacher' ? 'on' : ''}`} onClick={() => setTab('teacher')}>🧑‍🏫 선생님 사진 ({teacher.length})</button>
-          </div>
-        )}
         <div className="picker-grid">
           {list.map((m) => (
             <button key={m.id} className={`picker-item ${m.id === current ? 'on' : ''}`} onClick={() => onPick(m.id)}>
               <Thumb ns={ns} m={m} selected={m.id === current} />
-              {m.cardId === card.id && !m.teacher && <span className="picker-badge">이 카드</span>}
+              {m.cardId === card.id && <span className="picker-badge">이 카드</span>}
             </button>
           ))}
           {list.length === 0 && (
             <div className="picker-empty">
-              <p className="hint">{tab === 'mine' ? '아직 찍은 사진이 없어요' : '선생님 사진이 없어요'}</p>
-              {tab === 'mine' && <button className="btn big primary" onClick={() => go('shoot')}>📷 찍으러 가요</button>}
+              <p className="hint">아직 사진이 없어요</p>
+              <button className="btn big primary" onClick={() => go('shoot')}>📷 찍으러 가요</button>
             </div>
           )}
         </div>
