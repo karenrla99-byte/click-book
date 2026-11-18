@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import FaceCrop from '../../components/FaceCrop'
 import Guide from '../../components/Guide'
 import ScenePreview from '../../components/ScenePreview'
@@ -87,8 +88,8 @@ function PhotoPicker({ card, current, onPick, onClose }: {
   const list = [...project.media].sort((a, b) =>
     Number(b.cardId === card.id) - Number(a.cardId === card.id) || Number(!!a.teacher) - Number(!!b.teacher) || a.createdAt - b.createdAt)
 
-  return (
-    <div className="modal sheet" onClick={onClose}>
+  return createPortal(
+    <div className="modal picker-modal" onClick={onClose}>
       <div className="modal-body picker" onClick={(e) => e.stopPropagation()}>
         <div className="picker-head">
           <button className="btn" onClick={onClose}>✕ 닫기</button>
@@ -110,7 +111,8 @@ function PhotoPicker({ card, current, onPick, onClose }: {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
